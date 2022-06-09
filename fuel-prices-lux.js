@@ -1,3 +1,6 @@
+// Variables used by Scriptable.
+// These must be at the very top of the file. Do not edit.
+// icon-color: deep-green; icon-glyph: magic;
 // Version 1.0.0
 // Script by Thomas Salm
 // Usage:
@@ -59,6 +62,15 @@ function formatValue(value) {
     return price + "€"
 }
 
+function moneyTwoDecimalPlaces(value) {
+    return value.toString().match(/^-?\d+(?:\.\d{0,2})?/)[0]
+}
+
+function tenthOfCentValue(value) {
+    intValue = value * 1000
+    return (intValue % 10).toString()
+}
+
 function createList(data) {
     const list = new ListWidget()
     list.setPadding(10, 10, 10, 10)
@@ -83,28 +95,6 @@ function addHeaderRow(list, headerText, textColorValue) {
     currentPriceHeader = list.addText(headerText)
     currentPriceHeader.font = boldFont
     currentPriceHeader.textColor = textColorValue
-}
-
-function addPriceRow(list, fuelType, priceValue, trendValue) {
-    fontSize = 10
-    priceStack = list.addStack()
-    fuelTypeLabel = priceStack.addText(fuelType + ": ")
-    fuelTypeLabel.font = normalFont
-
-    priceStack.addSpacer()
-    if(trendValue == null) {
-        fuelTypeLabel.textColor = greyTextColor
-        priceTextColor = greyTextColor
-    } else {
-        fuelTypeLabel.textColor = textColor
-        trendArrow = priceStack.addText(trendValue.sign)
-        trendArrow.Font = normalFont
-        trendArrow.textColor = trendValue.textColor
-        priceTextColor = trendValue.textColor
-    }
-    price = priceStack.addText(formatValue(priceValue))
-    price.font = normalFont
-    price.textColor = priceTextColor
 }
 
 function calculateTrend(olderPrice, newerPrice) {
@@ -139,12 +129,23 @@ async function createWidget(data) {
     list.addSpacer(6)
 
     currentPriceArea = list.addStack()
-    currentPrice = currentPriceArea.addText(formatValue(currentPriceData.price))
+    // current price
+    currentPrice = currentPriceArea.addText(moneyTwoDecimalPlaces(currentPriceData.price))
     currentPrice.font = Font.boldMonospacedSystemFont(26)
     currentPrice.textColor = textColor
+    // tenth of a cent
+    tenthOfCent = currentPriceArea.addText(tenthOfCentValue(currentPriceData.price))
+    tenthOfCent.font = smallFont
+    tenthOfCent.textColor = textColor
+    // currency symbol
+    currencySymbol = currentPriceArea.addText("€")
+    currencySymbol.font = Font.boldMonospacedSystemFont(26)
+    currencySymbol.textColor = textColor
+    // trend arrow
     trendArrow = currentPriceArea.addText(currentTrend.sign)
     trendArrow.font = Font.boldMonospacedSystemFont(19)
     trendArrow.textColor = currentTrend.textColor
+    // fuel type label
     fuelTypeLabel = currentPriceArea.addText(mapFuelTypeName(currentPriceData.fuelType))
     fuelTypeLabel.font = smallFont
     fuelTypeLabel.textColor = textColor
@@ -156,7 +157,7 @@ async function createWidget(data) {
     currentPriceInfo.textColor = textColor
 
     list.addSpacer(6)
-    previousPrice = "vorher " + formatValue(previousPriceData.price)
+    previousPrice = "vorher " + previousPriceData.price
     previousPriceInfo = list.addText(previousPrice)
     previousPriceInfo.font = mediumFont
     previousPriceInfo.textColor = greyTextColor
@@ -167,7 +168,7 @@ async function createWidget(data) {
         futurePriceData = futurePriceDataArray[0]
         futureTrend = calculateTrend(currentPriceData.price, futurePriceData.price)
         futurePriceDate = new Date(futurePriceData.validFrom)
-        futurePriceMessage = "ab " + futurePriceDate.toLocaleDateString("de-DE") + " " + formatValue(futurePriceData.price)
+        futurePriceMessage = "ab " + futurePriceDate.toLocaleDateString("de-DE") + " " + futurePriceData.price
         futurePriceInfo = list.addText(futurePriceMessage)
         futurePriceInfo.font = mediumFont
         futurePriceInfo.textColor = futureTrend.sign
