@@ -28,6 +28,7 @@ const greenTextColor = Color.dynamic(new Color('00cc00'), new Color('00cc00'))
 const redTextColor = Color.dynamic(new Color('f92206'), new Color('f92206'))
 const trendGoesDown = { sign: "↓", textColor: greenTextColor}
 const trendGoesUp = { sign: "↑", textColor: redTextColor}
+const noChange = { sign: "→", textColor: textColor }
 const mediumFont = Font.mediumSystemFont(14)
 const normalFont = Font.mediumSystemFont(10)
 const smallFont =  Font.boldSystemFont(11)
@@ -63,7 +64,18 @@ function formatValue(value) {
 }
 
 function moneyTwoDecimalPlaces(value) {
-    return value.toString().match(/^-?\d+(?:\.\d{0,2})?/)[0]
+    regex = /^-?\d+(?:\.\d{0,2})?/
+    if(value.toString().match(regex) != null) {
+        result = value.toString().match(regex)[0]
+        result = result.replace(".", ",")
+        if(result.length == 4) {
+            return result
+        } else {
+            return result + "0"
+        }
+    } else {
+        return value.toString()
+    }
 }
 
 function tenthOfCentValue(value) {
@@ -100,8 +112,10 @@ function addHeaderRow(list, headerText, textColorValue) {
 function calculateTrend(olderPrice, newerPrice) {
     if(newerPrice < olderPrice) {
         return trendGoesDown
-    } else {
+    } else if (newerPrice > olderPrice) {
         return trendGoesUp
+    } else {
+        return noChange
     }
 }
 
@@ -131,7 +145,7 @@ async function createWidget(data) {
     currentPriceArea = list.addStack()
     // current price
     currentPrice = currentPriceArea.addText(moneyTwoDecimalPlaces(currentPriceData.price))
-    currentPrice.font = Font.boldMonospacedSystemFont(26)
+    currentPrice.font = Font.boldMonospacedSystemFont(25)
     currentPrice.textColor = textColor
     // tenth of a cent
     tenthOfCent = currentPriceArea.addText(tenthOfCentValue(currentPriceData.price))
@@ -139,7 +153,7 @@ async function createWidget(data) {
     tenthOfCent.textColor = textColor
     // currency symbol
     currencySymbol = currentPriceArea.addText("€")
-    currencySymbol.font = Font.boldMonospacedSystemFont(26)
+    currencySymbol.font = Font.boldMonospacedSystemFont(25)
     currencySymbol.textColor = textColor
     // trend arrow
     trendArrow = currentPriceArea.addText(currentTrend.sign)
@@ -157,7 +171,7 @@ async function createWidget(data) {
     currentPriceInfo.textColor = textColor
 
     list.addSpacer(6)
-    previousPrice = "vorher " + previousPriceData.price
+    previousPrice = "vorher " + moneyTwoDecimalPlaces(previousPriceData.price) + "€"
     previousPriceInfo = list.addText(previousPrice)
     previousPriceInfo.font = mediumFont
     previousPriceInfo.textColor = greyTextColor
@@ -168,7 +182,7 @@ async function createWidget(data) {
         futurePriceData = futurePriceDataArray[0]
         futureTrend = calculateTrend(currentPriceData.price, futurePriceData.price)
         futurePriceDate = new Date(futurePriceData.validFrom)
-        futurePriceMessage = "ab " + futurePriceDate.toLocaleDateString("de-DE") + " " + futurePriceData.price
+        futurePriceMessage = "ab " + futurePriceDate.toLocaleDateString("de-DE") + " " + moneyTwoDecimalPlaces(futurePriceData.price) + "€"
         futurePriceInfo = list.addText(futurePriceMessage)
         futurePriceInfo.font = mediumFont
         futurePriceInfo.textColor = futureTrend.sign
