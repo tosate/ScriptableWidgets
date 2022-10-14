@@ -79,7 +79,7 @@ function moneyTwoDecimalPlaces(value) {
 }
 
 function tenthOfCentValue(value) {
-    intValue = value * 1000
+    intValue = Math.round((value + Number.EPSILON)  * 1000)
     return (intValue % 10).toString()
 }
 
