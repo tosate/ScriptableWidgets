@@ -78,7 +78,7 @@ function moneyTwoDecimalPlaces(value) {
 }
 
 function tenthOfCentValue(value) {
-    intValue = Math.round((value + Number.EPSILON)  * 1000)
+    intValue = Math.round((parseFloat(value) + Number.EPSILON) * 1000)
     return (intValue % 10).toString()
 }
 
@@ -142,11 +142,11 @@ async function createWidget(data) {
     let currentTrend = calculateTrend(previousPriceData.price, currentPriceData.price)
 
     // Row 1: fuel type (like location in Weather)
-    let fuelTypeLabel = list.addText(mapFuelTypeName(currentPriceData.fuelType))
-    fuelTypeLabel.font = Font.mediumSystemFont(13)
+    let fuelTypeLabel = list.addText(mapFuelTypeName(currentPriceData.fuelType) + " ⛽")
+    fuelTypeLabel.font = Font.mediumSystemFont(16)
     fuelTypeLabel.textColor = textColor
 
-    list.addSpacer()
+    list.addSpacer(2)
 
     // Row 2: hero price (like temperature in Weather)
     let priceStack = list.addStack()
@@ -159,10 +159,15 @@ async function createWidget(data) {
 
     let superStack = priceStack.addStack()
     superStack.layoutVertically()
-    let superText = superStack.addText(tenthOfCentValue(currentPriceData.price) + "€")
+    let superText = superStack.addText(tenthOfCentValue(currentPriceData.price))
     superText.font = Font.boldSystemFont(14)
     superText.textColor = textColor
-    superStack.addSpacer(10)
+    superStack.addSpacer(20)
+
+    let euroSign = priceStack.addText("€")
+    euroSign.font = Font.boldMonospacedSystemFont(34)
+    euroSign.textColor = textColor
+    euroSign.minimumScaleFactor = 0.8
 
     list.addSpacer(4)
 
@@ -178,12 +183,12 @@ async function createWidget(data) {
     deltaText.font = Font.mediumSystemFont(17)
     deltaText.textColor = currentTrend.textColor
 
-    list.addSpacer()
+    list.addSpacer(6)
 
     // Row 4: date + country context (like H/L in Weather)
     let validFromDate = new Date(currentPriceData.validFrom)
     let dateText = list.addText("seit " + validFromDate.toLocaleDateString("de-DE"))
-    dateText.font = Font.systemFont(10)
+    dateText.font = Font.systemFont(15)
     dateText.textColor = greyTextColor
 
     let footer = list.addText("max Preis 🇱🇺")
