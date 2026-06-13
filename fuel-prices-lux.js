@@ -1,7 +1,7 @@
 // Variables used by Scriptable.
 // These must be at the very top of the file. Do not edit.
 // icon-color: deep-green; icon-glyph: magic;
-// Version 1.0.0
+// Version 2.0.0
 // Script by Thomas Salm
 // Usage:
 // Add credentials and fuelType to your widget parameters: 
@@ -38,7 +38,7 @@ const super95UiLabel = 'Super 95'
 const super98JsonName = 'Unleaded (Super 98 oct)'
 const super98UiLabel = 'Super 98'
 
-const apiURL = (apiKey) => `https://fuel.devtom.de?apikey=${apiKey}&fuelType=${fuelType}`
+const apiURL = () => `https://fuel.devtom.de?fuelType=${fuelType}`
 
 let fuelData = await loadData(apiKey, fuelType)
 let widget = await createWidget(fuelData)
@@ -51,10 +51,9 @@ Script.setWidget(widget)
 Script.complete()
 
 async function loadData(apiKey, fuelType) {
-    
-    const data = await new Request(apiURL(apiKey, fuelType)).loadJSON()
-
-    return data
+    const req = new Request(apiURL())
+    req.headers = { "Authorization": `Bearer ${apiKey}` }
+    return await req.loadJSON()
 }
 
 function formatValue(value) {
@@ -83,9 +82,14 @@ function tenthOfCentValue(value) {
     return (intValue % 10).toString()
 }
 
+function formatDelta(olderPrice, newerPrice) {
+    const cents = Math.round(Math.abs(newerPrice - olderPrice) * 1000) / 10
+    return cents.toFixed(1).replace(".", ",") + "¢"
+}
+
 function createList(data) {
     const list = new ListWidget()
-    list.setPadding(10, 10, 10, 10)
+    list.setPadding(14, 16, 14, 16)
 
     const gradient = new LinearGradient()
     gradient.locations = [0, 1]
@@ -130,64 +134,61 @@ function mapFuelTypeName(fuelType) {
 }
 
 async function createWidget(data) {
-    let list = createList(data);
-    list.refreshAfterDate = new Date(Date.now() + 300000);
+    let list = createList(data)
+    list.refreshAfterDate = new Date(Date.now() + 300000)
 
     let currentPriceData = data.currentPrices[0]
     let previousPriceData = data.previousPrices[0]
     let currentTrend = calculateTrend(previousPriceData.price, currentPriceData.price)
 
-    let topBar = list.addStack()
-    let topBarIcons = topBar.addText("⛽️ max Preis in 🇱🇺")
-    topBarIcons.font = mediumFont
-    list.addSpacer(6)
-
-    currentPriceArea = list.addStack()
-    // current price
-    currentPrice = currentPriceArea.addText(moneyTwoDecimalPlaces(currentPriceData.price))
-    currentPrice.font = Font.boldMonospacedSystemFont(25)
-    currentPrice.textColor = textColor
-    // tenth of a cent
-    tenthOfCent = currentPriceArea.addText(tenthOfCentValue(currentPriceData.price))
-    tenthOfCent.font = smallFont
-    tenthOfCent.textColor = textColor
-    // currency symbol
-    currencySymbol = currentPriceArea.addText("€")
-    currencySymbol.font = Font.boldMonospacedSystemFont(25)
-    currencySymbol.textColor = textColor
-    // trend arrow
-    trendArrow = currentPriceArea.addText(currentTrend.sign)
-    trendArrow.font = Font.boldMonospacedSystemFont(19)
-    trendArrow.textColor = currentTrend.textColor
-    // fuel type label
-    fuelTypeLabel = currentPriceArea.addText(mapFuelTypeName(currentPriceData.fuelType))
-    fuelTypeLabel.font = smallFont
+    // Row 1: fuel type (like location in Weather)
+    let fuelTypeLabel = list.addText(mapFuelTypeName(currentPriceData.fuelType))
+    fuelTypeLabel.font = Font.mediumSystemFont(13)
     fuelTypeLabel.textColor = textColor
 
-    currentPriceDate = new Date(currentPriceData.validFrom)
-    currentPriceValidSince = "seit " + currentPriceDate.toLocaleDateString("de-DE")
-    currentPriceInfo = list.addText(currentPriceValidSince)
-    currentPriceInfo.font = normalFont
-    currentPriceInfo.textColor = textColor
-
-    list.addSpacer(6)
-    previousPrice = "vorher " + moneyTwoDecimalPlaces(previousPriceData.price) + "€"
-    previousPriceInfo = list.addText(previousPrice)
-    previousPriceInfo.font = mediumFont
-    previousPriceInfo.textColor = greyTextColor
-
-    list.addSpacer(2)
-    futurePriceDataArray = data.futurePrices
-    if(futurePriceDataArray.length > 0) {
-        futurePriceData = futurePriceDataArray[0]
-        futureTrend = calculateTrend(currentPriceData.price, futurePriceData.price)
-        futurePriceDate = new Date(futurePriceData.validFrom)
-        futurePriceMessage = "ab " + futurePriceDate.toLocaleDateString("de-DE") + " " + moneyTwoDecimalPlaces(futurePriceData.price) + "€"
-        futurePriceInfo = list.addText(futurePriceMessage)
-        futurePriceInfo.font = mediumFont
-        futurePriceInfo.textColor = futureTrend.sign
-    }
     list.addSpacer()
+
+    // Row 2: hero price (like temperature in Weather)
+    let priceStack = list.addStack()
+    priceStack.bottomAlignContent()
+
+    let mainPrice = priceStack.addText(moneyTwoDecimalPlaces(currentPriceData.price))
+    mainPrice.font = Font.boldMonospacedSystemFont(34)
+    mainPrice.textColor = textColor
+    mainPrice.minimumScaleFactor = 0.8
+
+    let superStack = priceStack.addStack()
+    superStack.layoutVertically()
+    let superText = superStack.addText(tenthOfCentValue(currentPriceData.price) + "€")
+    superText.font = Font.boldSystemFont(14)
+    superText.textColor = textColor
+    superStack.addSpacer(10)
+
+    list.addSpacer(4)
+
+    // Row 3: trend arrow + delta (like condition icon in Weather)
+    let trendRow = list.addStack()
+    trendRow.centerAlignContent()
+
+    let trendArrow = trendRow.addText(currentTrend.sign + " ")
+    trendArrow.font = Font.boldSystemFont(22)
+    trendArrow.textColor = currentTrend.textColor
+
+    let deltaText = trendRow.addText(formatDelta(previousPriceData.price, currentPriceData.price))
+    deltaText.font = Font.mediumSystemFont(17)
+    deltaText.textColor = currentTrend.textColor
+
+    list.addSpacer()
+
+    // Row 4: date + country context (like H/L in Weather)
+    let validFromDate = new Date(currentPriceData.validFrom)
+    let dateText = list.addText("seit " + validFromDate.toLocaleDateString("de-DE"))
+    dateText.font = Font.systemFont(10)
+    dateText.textColor = greyTextColor
+
+    let footer = list.addText("max Preis 🇱🇺")
+    footer.font = Font.systemFont(10)
+    footer.textColor = greyTextColor
 
     return list
 }
