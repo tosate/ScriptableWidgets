@@ -16,8 +16,11 @@ if (widgetInput !== null) {
     if (!apiKey || !fuelType) {
         throw new Error("Invalid parameter. Expected format: apiKey|fuelType (diesel, super95, super98)")
     }
+} else if (!config.runsInWidget) {
+    apiKey = "your-api-key"
+    fuelType = "super98"
 } else {
-    throw new Error("No Widget paramter set. Expected format: apiKey|fuelType (diesel, super95, super98)")
+    throw new Error("No Widget parameter set. Expected format: apiKey|fuelType (diesel, super95, super98)")
 }
 
 const backColor = Color.dynamic(new Color('FFFFFF'), new Color('111111'))
@@ -33,10 +36,10 @@ const mediumFont = Font.mediumSystemFont(14)
 const normalFont = Font.mediumSystemFont(10)
 const smallFont =  Font.boldSystemFont(11)
 const boldFont = Font.boldSystemFont(10)
-const super95JsonName = 'Unleaded (Super 95 oct)'
-const super95UiLabel = 'Super 95'
-const super98JsonName = 'Unleaded (Super 98 oct)'
-const super98UiLabel = 'Super 98'
+const super95JsonName = 'EuroSuper 95 (E10)'
+const super95UiLabel = 'Super 95 (E10)'
+const super98JsonName = 'SuperPlus 98 (E5)'
+const super98UiLabel = 'Super 98 (E5)'
 
 const apiURL = () => `https://fuel.devtom.de?fuelType=${fuelType}`
 
